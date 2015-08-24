@@ -51,7 +51,9 @@ var MyModule = require('app/MyModule');
 ```javascript
 require(['domReady!'], function(readme){});
 
-require(['js!./test.js'], function(readme){});
+require(['js!./test.js'], function(readme){
+	//loads non-AMD files
+});
 
 require(['css!./test.css'], function(readme){});
 
