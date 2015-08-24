@@ -30,7 +30,8 @@ The dependencies argument is optional.
 ### definition
 The third argument, definition, is a function that should be executed to instantiate the module or an object. If the definition is a function it should only be executed once. If the definition argument is an object, that object should be assigned as the exported value of the module.
 
-## Configuration
+## Examples
+### Configuration
 ```javascript
 AMDLoader.config = {
 	baseUrl: '/app',
@@ -43,7 +44,7 @@ AMDLoader.config = {
 };
 ```
 
-## Example 1
+### Example 1
 ```javascript
 require(['app/MyModule'], 
     function(MyModule){
@@ -53,7 +54,16 @@ require(['app/MyModule'],
 });
 ```
 
-## Example 2
+### Example 2
+```javascript
+require(function(MyModule){
+    //start the main module which in-turn loads other modules
+    var module = new MyModule();
+    module.doStuff();
+});
+```
+
+### Example 3
 ```javascript
 define(['lib/Deferred'], function(Deferred){
     var defer = new Deferred(); 
@@ -66,13 +76,13 @@ define(['lib/Deferred'], function(Deferred){
 });
 ```
 
-## Example 3
+### Example 4
 ```javascript
 //'app/MyModule' should already be loaded
 var MyModule = require('app/MyModule');
 ```
 
-## Supports domReady, js, css, text, uint8, and img plugins
+### Supports domReady, js, css, text, uint8, and img plugins
 ```javascript
 require(['domReady!'], function(readme){});
 
