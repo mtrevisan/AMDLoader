@@ -5,6 +5,19 @@ Mainly it allows you to
   - load resources on demand
   - define dependencies that must load before a module is executed
 
+## Configuration
+```javascript
+AMDLoader.config = {
+	baseUrl: '/app',
+	urlArgs: 't=123456',
+	paths: {
+		libs: '../libs',
+		i18n: '../resources/i18n',
+		css: '../resources/css'
+	}
+};
+```
+
 ## Example 1
 ```javascript
 require(['app/MyModule'], 
@@ -32,4 +45,14 @@ define(['lib/Deferred'], function(Deferred){
 ```javascript
 //'app/MyModule' should already be loaded
 var MyModule = require('app/MyModule');
+```
+
+## Supports domReady, js, css, text, uint8 plugin, and many others
+```javascript
+require(['domReady!'], function(readme){});
+require(['js!./test.js'], function(readme){});
+require(['css!./test.css'], function(readme){});
+require(['text!./test.md'], function(readme){});
+require(['uint8!./test.dat'], function(readme){});
+require(['img!./test.jpg'], function(readme){});
 ```
