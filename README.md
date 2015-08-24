@@ -66,9 +66,9 @@ require/define(function(MyModule){
 ```javascript
 require/define(['lib/Deferred'], function(Deferred){
     var defer = new Deferred(); 
-    require(['lib/templates/?index.html', 'lib/data/?stats'],
+    require(['lib/templates/index', 'text!lib/data/stats.dat'],
         function(template, data){
-            defer.resolve({template: template, data:data });
+            defer.resolve({template: template, data: data});
         }
     );
     return defer.promise();
