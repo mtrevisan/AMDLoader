@@ -47,7 +47,7 @@ define(['lib/Deferred'], function(Deferred){
 var MyModule = require('app/MyModule');
 ```
 
-## Supports domReady, js, css, text, uint8 plugin, and many others
+## Supports domReady, js, css, text, uint8, and img plugins
 ```javascript
 require(['domReady!'], function(readme){});
 require(['js!./test.js'], function(readme){});
