@@ -1,7 +1,7 @@
 # AMDLoader
 Minimal file and module loader that implements the Asynchronous module definition (AMD), compliant with require.js.
 
-Mainly it allows you to
+Mainly it allows you to:
   - load resources on demand
   - define dependencies that must load before a module is executed
 
@@ -54,5 +54,7 @@ require(['js!./test.js'], function(readme){});
 require(['css!./test.css'], function(readme){});
 require(['text!./test.md'], function(readme){});
 require(['uint8!./test.dat'], function(readme){});
-require(['img!./test.jpg'], function(readme){});
+require(['img!./test.jpg'], function(readme){
+	//this implies DOM to be ready
+});
 ```
