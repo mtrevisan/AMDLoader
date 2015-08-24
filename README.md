@@ -7,29 +7,29 @@ Mainly it allows you to
 
 Example 1
 ```javascript
-    require(['app/MyModule'], 
-        function(MyModule){
-            //start the main module which in-turn loads other modules
-            var module = new MyModule();
-            module.doStuff();
-    });
+require(['app/MyModule'], 
+    function(MyModule){
+        //start the main module which in-turn loads other modules
+        var module = new MyModule();
+        module.doStuff();
+});
 ```
 
 Example 2
 ```javascript
-  define(['lib/Deferred'], function(Deferred){
-      var defer = new Deferred(); 
-      require(['lib/templates/?index.html', 'lib/data/?stats'],
-          function(template, data){
-              defer.resolve({template: template, data:data });
-          }
-      );
-      return defer.promise();
-  });
+define(['lib/Deferred'], function(Deferred){
+    var defer = new Deferred(); 
+    require(['lib/templates/?index.html', 'lib/data/?stats'],
+        function(template, data){
+            defer.resolve({template: template, data:data });
+        }
+    );
+    return defer.promise();
+});
 ```
 
 Example 3
 ```javascript
-    //'app/MyModule' should already be loaded
-    var MyModule = require('app/MyModule');
+//'app/MyModule' should already be loaded
+var MyModule = require('app/MyModule');
 ```
