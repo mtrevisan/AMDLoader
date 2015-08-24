@@ -50,10 +50,15 @@ var MyModule = require('app/MyModule');
 ## Supports domReady, js, css, text, uint8, and img plugins
 ```javascript
 require(['domReady!'], function(readme){});
+
 require(['js!./test.js'], function(readme){});
+
 require(['css!./test.css'], function(readme){});
+
 require(['text!./test.md'], function(readme){});
+
 require(['uint8!./test.dat'], function(readme){});
+
 require(['img!./test.jpg'], function(readme){
 	//this implies DOM to be ready
 });
