@@ -5,7 +5,7 @@ Mainly it allows you to
   - load resources on demand
   - define dependencies that must load before a module is executed
 
-Example 1
+## Example 1
 ```javascript
 require(['app/MyModule'], 
     function(MyModule){
@@ -15,7 +15,7 @@ require(['app/MyModule'],
 });
 ```
 
-Example 2
+## Example 2
 ```javascript
 define(['lib/Deferred'], function(Deferred){
     var defer = new Deferred(); 
@@ -28,7 +28,7 @@ define(['lib/Deferred'], function(Deferred){
 });
 ```
 
-Example 3
+## Example 3
 ```javascript
 //'app/MyModule' should already be loaded
 var MyModule = require('app/MyModule');
