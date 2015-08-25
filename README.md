@@ -47,7 +47,6 @@ AMDLoader.config = {
 ### Example 1
 ```javascript
 require/define(['app/MyModule'], function(MyModule){
-    //start the main module which in-turn loads other modules
     var module = new MyModule();
     module.doStuff();
 });
@@ -56,7 +55,6 @@ require/define(['app/MyModule'], function(MyModule){
 ### Example 2
 ```javascript
 require/define(function(MyModule){
-    //start the main module which in-turn loads other modules
     var module = new MyModule();
     module.doStuff();
 });
