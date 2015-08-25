@@ -22,11 +22,7 @@ var AMDLoader = (function(doc){
 		base: function(url, id){
 			injectScript({
 				src: url,
-//				charset: 'UTF-8',
-//				type: 'text/javascript',
 				async: true
-//			}, function(){
-//				resolve(id);
 			});
 		},
 
