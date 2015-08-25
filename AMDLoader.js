@@ -8,7 +8,8 @@
 var AMDLoader = (function(doc){
 
 	var promises = {},
-		resolves = {};
+		resolves = {},
+		definitions = {};
 
 
 	/** @private */
@@ -18,10 +19,14 @@ var AMDLoader = (function(doc){
 
 	/** @private */
 	var plugins = {
-		base: function(url){
+		base: function(url, id){
 			injectScript({
 				src: url,
+//				charset: 'UTF-8',
+//				type: 'text/javascript',
 				async: true
+			}, function(){
+				resolve(id);
 			});
 		},
 
@@ -90,8 +95,9 @@ var AMDLoader = (function(doc){
 	/** @private */
 	var resolve = function(id, value){
 		resolves[id](value);
-
 		delete resolves[id];
+
+		definitions[id] = value;
 	};
 
 	/**
@@ -121,6 +127,8 @@ var AMDLoader = (function(doc){
 			});
 	};
 
+	define.amd = {};
+
 	/**
 	 * Call a function with dependencies.
 	 *
@@ -130,6 +138,7 @@ var AMDLoader = (function(doc){
 	 * </code>
 	 *
 	 * @example
+	 * To be used only if a module has already been loaded.
 	 * <code>
 	 * var Lexer = require('tools/data/Lexer');
 	 * </code>
@@ -146,10 +155,12 @@ var AMDLoader = (function(doc){
 			dependencies = [dependencies];
 
 		//enforce domReady when the img! plugin is required
-		if(!doc.readyState && dependencies.some(function(dep){ return (dep.indexOf('img!') == 0); }))
+		if(!doc.readyState && dependencies.some(function(dep){ return (dep.indexOf('img!') == 0); })){
 			require(['domReady!'], function(){
 				require(dependencies, definition);
 			});
+			return;
+		}
 
 		if(!dependencies.length)
 			//module has no dependencies, run definition now
@@ -167,27 +178,14 @@ var AMDLoader = (function(doc){
 				});
 			}
 			else{
-//				async(function*(){
-//					definition = yield getDependencyPromise(dependencies[0]);
-//				});
+				var def = definitions[dependencies[0]];
+				if(def)
+					return def;
 
-//				getDependencyPromise(dependencies).then(function(result){
-//					definition = result;
-//				});
-				return definition;
+				throw new Error('Module name "' + dependencies[0] + '" has not been loaded yet.');
 			}
 		}
 	};
-
-	/* * @private * /
-	var async = function(fnGenerator){
-		var generator = fnGenerator(),
-			promise = generator.next().value;
-		if(promise)
-			promise.then(function(result){
-				generator.next(result);
-			});
-	};*/
 
 	/** @private */
 	var getDependencyPromise = function(id){
@@ -333,6 +331,8 @@ var AMDLoader = (function(doc){
 
 			Object.keys(module).forEach(function(key){
 				el[key] = module[key];
+				//alternative code:
+//				el.setAttribute(key, module[key]);
 			});
 
 			head.appendChild(el);
