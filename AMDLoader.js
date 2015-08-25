@@ -25,8 +25,8 @@ var AMDLoader = (function(doc){
 //				charset: 'UTF-8',
 //				type: 'text/javascript',
 				async: true
-			}, function(){
-				resolve(id);
+//			}, function(){
+//				resolve(id);
 			});
 		},
 
