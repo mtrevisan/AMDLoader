@@ -30,6 +30,14 @@ The dependencies argument is optional.
 ### definition
 The third argument, definition, is a function that should be executed to instantiate the module or an object. If the definition is a function it should only be executed once. If the definition argument is an object, that object should be assigned as the exported value of the module.
 
+## require(String)
+Synchronously returns the module export for the module ID represented by the String argument. Based on the [CommonJS Modules 1.1.1 require](http://wiki.commonjs.org/wiki/Modules/1.1.1#Require).
+
+It MUST throw an error if the module has not already been loaded and evaluated. In particular, the synchronous call to require MUST NOT try to dynamically fetch the module if it is not already loaded, but throw an error instead.
+
+## require(Array, Function)
+The Array is an array of String module IDs. The modules that are represented by the module IDs should be retrieved and once all the modules for those module IDs are available, the Function callback is called, passing the modules in the same order as the their IDs in the Array argument.
+
 ## Examples
 ### Configuration
 ```javascript
