@@ -14,12 +14,12 @@ var AMDLoader = (function(doc){
 
 	/** @private */
 	var isFunction = function(fn){
-		return (typeof fn === 'function');
+		return (typeof fn == 'function');
 	};
 
 	/** @private */
 	var plugins = {
-		base: function(url, id){
+		base: function(url){
 			injectScript({
 				src: url,
 				async: true
@@ -99,17 +99,17 @@ var AMDLoader = (function(doc){
 	/**
 	 * Define a module with dependencies.
 	 *
-	 * @param {String} id				Name of the module
+	 * @param {String} [id]				Name of the module
 	 * @param {Array}	[dependencies]	Array of dependencies
-	 * @param {Function}	definition	Function returing the module object
+	 * @param {Function}	definition	Function returning the module object
 	 */
 	var define = function(id, dependencies, definition){
 		var args = [id, dependencies, definition];
-		args.unshift(typeof id === 'string'? normalizeURL(args.shift()): getCurrentID());
+		args.unshift(typeof id == 'string'? normalizeURL(args.shift()): getCurrentID());
 		if(!Array.isArray(args[1]))
 			args.splice(1, 0, extractDependencies(dependencies));
 
-		id = args[0];
+		id = addJSExtension(args[0]);
 		dependencies = args[1];
 		definition = args[2];
 
@@ -140,7 +140,7 @@ var AMDLoader = (function(doc){
 	 * </code>
 	 *
 	 * @param {Array/String} [dependencies]	Array of dependencies, or dependency to load if string
-	 * @param {Function} [definition]			Callback with dependencies as parameters
+	 * @param {Function} [definition]			Callback with dependencies as array as parameters
 	 */
 	var require = function(dependencies, definition){
 		if(isFunction(dependencies)){
@@ -185,6 +185,8 @@ var AMDLoader = (function(doc){
 
 	/** @private */
 	var getDependencyPromise = function(id){
+		id = addJSExtension(id);
+
 		if(!promises[id])
 			promises[id] = new Promise(function(resolve){
 				resolves[id] = resolve;
@@ -200,19 +202,28 @@ var AMDLoader = (function(doc){
 
 				plugins[args[0]](args[1], id);
 			});
+//		else if(!definitions[id])
+//			throw new Error('Circular dependency found while loading module name "' + id + '".');
 
 		return promises[id];
 	};
 
 	/** @private */
-	var getCurrentID = function(ext){
-		return doc.currentScript.getAttribute('src').replace(ext || /\.[^/.]+$/, '');
+	var getCurrentID = function(replacement){
+		return doc.currentScript.getAttribute('src').replace(replacement || /\.[^/.]+$/, '');
+	};
+
+	/** @private */
+	var addJSExtension = function(value){
+		return value.replace(/(.+[\/\\][^\.]+)(\.js)?$/, '$1.js');
 	};
 
 	/** @private */
 	var normalizeURL = function(id){
-		var urlPlugin = id.split('!'),
-			url = (urlPlugin.length == 1? urlPlugin[0]: urlPlugin[1]);
+		//turns a plugin!url to [plugin, url] with the plugin being undefined if the name did not have a plugin prefix
+		var pluginUrl = id.split('!'),
+			len = pluginUrl.length,
+			url = pluginUrl[len == 1? 0: 1];
 
 		if(url){
 			var cfg = AMDLoader.config;
@@ -223,7 +234,7 @@ var AMDLoader = (function(doc){
 			}
 			//if a colon is in the URL, it indicates a protocol is used and it is just an URL to a file, or if it starts with a slash, contains a query arg (i.e. ?)
 			//or ends with .js, then assume the user meant to use an url and not a module id (the slash is important for protocol-less URLs as well as full paths)
-			if(!url.match(/^\/|:|\?|\.js$/)){
+			if(len == 2 || !url.match(/^\/|:|\?|\.js$/)){
 				if(cfg.baseUrl)
 					url = cfg.baseUrl.replace(/\/?$/, '/' + url);
 
@@ -285,7 +296,6 @@ var AMDLoader = (function(doc){
 
 	/** @private */
 	var injectScript = function(module, success, failure){
-		module.src += '.js';
 		//actually, we don't even need to set this at all
 		//module.type = 'text/javascript';
 		module.charset = module.charset || 'UTF-8';
