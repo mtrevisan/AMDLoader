@@ -9,7 +9,8 @@ var AMDLoader = (function(doc){
 
 	var promises = {},
 		resolves = {},
-		definitions = {};
+		definitions = {},
+		tree;
 
 
 	/** @private */
@@ -19,11 +20,11 @@ var AMDLoader = (function(doc){
 
 	/** @private */
 	var plugins = {
-		base: function(url){
+		base: function(url, id, failure){
 			injectScript({
 				src: url,
 				async: true
-			});
+			}, undefined, failure);
 		},
 
 		domReady: function(url, id){
@@ -41,16 +42,16 @@ var AMDLoader = (function(doc){
 			}, 0);
 		},
 
-		js: function(url, id){
+		js: function(url, id, failure){
 			injectScript({
 				src: url,
 				async: true
 			}, function(){
 				resolve(id);
-			});
+			}, failure);
 		},
 
-		css: function(url, id){
+		css: function(url, id, failure){
 			injectElement('link', {
 				href: url + '.css',
 				type: 'text/css',
@@ -60,40 +61,46 @@ var AMDLoader = (function(doc){
 				setTimeout(function(){
 					resolve(id);
 				}, 50);
-			});
+			}, failure);
 		},
 
-		text: function(url, id){
+		text: function(url, id, failure){
 			requestFile('text', {
 				url: url
 			}, function(text){
 				resolve(id, text);
-			});
+			}, failure);
 		},
 
-		uint8: function(url, id){
+		uint8: function(url, id, failure){
 			requestFile('arraybuffer', {
 				url: url
 			}, function(array){
 				resolve(id, array);
-			});
+			}, failure);
 		},
 
-		img: function(url, id){
+		img: function(url, id, failure){
 			injectImage({
 				src: url
 			}, function(el){
 				resolve(id, el);
-			});
+			}, failure);
 		}
 	};
 
 	/** @private */
 	var resolve = function(id, value){
+		if(!resolves[id])
+			promises[id] = new Promise(function(resolve){
+				resolves[id] = resolve;
+			});
 		resolves[id](value);
-		delete resolves[id];
+		resolves[id] = null;
 
 		definitions[id] = value;
+
+		//console.log('resolved module ' + id.replace(/.+\//, '') + ', remains [' + Object.keys(promises).filter(function(k){ return !!resolves[k]; }).map(function(k){ return k.replace(/.+\//, ''); }).join(', ') + ']');
 	};
 
 	/**
@@ -112,6 +119,9 @@ var AMDLoader = (function(doc){
 		id = addJSExtension(args[0]);
 		dependencies = args[1];
 		definition = args[2];
+
+		//console.log('define module ' + id.replace(/.+\//, '') + (dependencies.length? ' with dependencies [' + dependencies.map(function(dep){ return dep.replace(/.+\//, ''); }).join(', ') + ']': '') + ', remains [' + Object.keys(promises).filter(function(k){ return !!resolves[k]; }).map(function(k){ return k.replace(/.+\//, ''); }).join(', ') + ']');
+		checkForCircularDependency(id, dependencies);
 
 		if(!dependencies.length)
 			//module has no dependencies, bind id to definition
@@ -151,25 +161,30 @@ var AMDLoader = (function(doc){
 			dependencies = [dependencies];
 
 		//enforce domReady when the img! plugin is required
-		if(!doc.readyState && dependencies.some(function(dep){ return (dep.indexOf('img!') == 0); })){
+		if(!doc.readyState && dependencies.some(function(dep){ return !dep.indexOf('img!'); })){
 			require(['domReady!'], function(){
 				require(dependencies, definition);
 			});
 			return;
 		}
 
+		//console.log('require module' + (dependencies.length? ' with dependencies [' + dependencies.map(function(dep){ return dep.replace(/.+\//, ''); }).join(', ') + ']': '') + ', remains [' + Object.keys(promises).filter(function(k){ return !!resolves[k]; }).map(function(k){ return k.replace(/.+\//, ''); }).join(', ') + ']');
+
 		if(!dependencies.length)
 			//module has no dependencies, run definition now
 			definition.apply(this);
 		else{
 			//resolve urls
-			dependencies = dependencies.map(normalizeURL, this);
+			dependencies = dependencies.map(normalizeURL);
 
 			if(definition){
-				//need to wait for all dependencies to load
-				var promises = dependencies.map(getDependencyPromise, this);
+				var proms = dependencies.map(function(dep){ return getDependencyPromise(dep, failureFn); });
 
-				Promise.all(promises).then(function(result){
+				//need to wait for all dependencies to load
+				Promise.all(proms).then(function(result){
+					//remove js! plugins from result
+					result = result.filter(function(res, idx){ return !!dependencies[idx].indexOf('js!'); });
+
 					definition.apply(this, result);
 				});
 			}
@@ -184,7 +199,27 @@ var AMDLoader = (function(doc){
 	};
 
 	/** @private */
-	var getDependencyPromise = function(id){
+	var failureFn = function(err){
+		console.warn(err);
+	};
+
+	var existFile = function(url, success, failure){
+		requestFile('text', {url: addJSExtension(normalizeURL(url))}, success, failure);
+	};
+
+	/** @private */
+	var checkForCircularDependency = function(id, dependencies){
+		if(tree){
+			tree.addVertex(id, dependencies.map(normalizeURL).map(addJSExtension));
+
+			var scc = tree.getStronglyConnectedComponents();
+			if(scc.length)
+				throw 'Circular dependency found: ' + JSON.stringify(scc.map(function(component){ return component.join(' > '); }));
+		}
+	};
+
+	/** @private */
+	var getDependencyPromise = function(id, failure){
 		id = addJSExtension(id);
 
 		if(!promises[id])
@@ -200,10 +235,8 @@ var AMDLoader = (function(doc){
 					args.unshift('base');
 				}
 
-				plugins[args[0]](args[1], id);
+				plugins[args[0]](args[1], id, failure);
 			});
-//		else if(!definitions[id])
-//			throw new Error('Circular dependency found while loading module name "' + id + '".');
 
 		return promises[id];
 	};
@@ -215,7 +248,7 @@ var AMDLoader = (function(doc){
 
 	/** @private */
 	var addJSExtension = function(value){
-		return value.replace(/(.+[\/\\][^\.]+)(\.js)?$/, '$1.js');
+		return (!value.match(/\.min$/) && value.match(/\.[^.\/]+$/)? value: value + '.js');
 	};
 
 	/** @private */
@@ -226,7 +259,7 @@ var AMDLoader = (function(doc){
 			url = pluginUrl[len == 1? 0: 1];
 
 		if(url){
-			var cfg = AMDLoader.config;
+			var cfg = (AMDLoader || {}).config || {};
 			if(cfg.paths){
 				var path = cfg.paths[url.split('/')[0]];
 				if(path)
@@ -331,8 +364,8 @@ var AMDLoader = (function(doc){
 				var errorText = 'Syntax or http error loading: ' + (module.src || module.href);
 				failure && failure(new Error(errorText));
 
-				if(!failure)
-					throw errorText;
+				//if(!failure)
+				//	throw errorText;
 			};
 
 			Object.keys(module).forEach(function(key){
@@ -375,8 +408,8 @@ var AMDLoader = (function(doc){
 			var errorText = 'Syntax or http error loading: ' + module.src;
 			failure && failure(new Error(errorText));
 
-			if(!failure)
-				throw errorText;
+			//if(!failure)
+			//	throw errorText;
 		};
 
 		//NOTE: this requires domReady!
@@ -391,6 +424,8 @@ var AMDLoader = (function(doc){
 		var xhr = new XMLHttpRequest();
 		xhr.open('GET', module.url, true);
 		xhr.responseType = responseType;
+		if(xhr.overrideMimeType)
+			xhr.overrideMimeType('text/plain; charset=' + (module.charset || 'UTF-8'));
 		xhr.onreadystatechange = function(){
 			if(xhr.readyState == 4){
 				if(xhr.status == 200)
@@ -420,15 +455,21 @@ var AMDLoader = (function(doc){
 				src: bootScript
 			});
 		}
+
+		require(['../app/tools/data/structs/Tarjan'], function(Tarjan){
+			tree = new Tarjan();
+		});
 	})();
 
 
 	return {
 		define: define,
-		require: require
+		require: require,
+		existFile: existFile
 	};
 
 })(window.document);
 
 window.define = AMDLoader.define;
 window.require = AMDLoader.require;
+window.existFile = AMDLoader.existFile;
